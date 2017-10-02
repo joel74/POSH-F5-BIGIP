@@ -1,4 +1,4 @@
-﻿Function New-F5Session{
+﻿Function New-Session{
 <#
 .SYNOPSIS
     Generate an F5 session object to be used in querying and modifying the F5 LTM

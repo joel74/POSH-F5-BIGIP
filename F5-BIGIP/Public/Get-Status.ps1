@@ -1,4 +1,4 @@
-﻿Function Get-F5Status{
+﻿Function Get-Status{
 <#
 .SYNOPSIS                                                                          
     Test whether the specified F5 is currently in active or standby failover mode
