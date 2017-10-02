@@ -21,7 +21,7 @@
         [string]$Partition,
 
         [Parameter(Mandatory=$false)]
-        [PoshLTM.F5Address]$Address,
+        [PoshLTM.F5Address]$Address=[PoshLTM.F5Address]::Any,
 
         [Parameter(Mandatory=$false)]
         [string]$Name,
@@ -54,20 +54,14 @@
             $Address = "{0}%{1}" -f $Address.IPAddress.IPAddressToString, $RouteDomain.ToString()
         }
 
-        #First check for an existing node by name, then by IP address
-        #NB: FQDN node will not have a value for IP address
-        If ($Name){
-            #Strip out any port info when checking for an existing node
-            $Node = $Name -replace ':\d+$',''
-            $ExistingNode = Get-Node -F5Session $F5Session -Name $Node -Partition $Partition -ErrorAction SilentlyContinue
-        }
-        ElseIf ($Address){
-            $ExistingNode = Get-Node -F5Session $F5Session -Address $Address -Partition $Partition -ErrorAction SilentlyContinue
-        }
-        Else {
+        If (!$Name -and !$Address){
             Write-Error 'Either a name or an IP address is required.'
         }
+        
+        #Strip out any port info when checking for an existing node
+        $NodeName = $Name -replace ':\d+$',''
 
+        $ExistingNode = Get-Node -F5Session $F5Session -Address $Address -Name $NodeName -Partition $Partition -ErrorAction SilentlyContinue
     }
 
     process {
@@ -75,8 +69,8 @@
             'InputObject' {
                 switch ($InputObject.kind) {
                     "tm:ltm:pool:poolstate" {
-                        If ($Address){
-                            $AddressString = $Address.ToString()
+                        $AddressString = $Address.ToString()
+                        if ($Address -ne [PoshLTM.F5Address]::Any) {
                             # Default name to IPAddress
                             if (!$Name) {
                                 $Name = '{0}:{1}' -f $AddressString, $PortNumber
@@ -99,20 +93,13 @@
                             $MembersLink = $F5session.GetLink($pool.membersReference.link)
                             Invoke-F5RestMethod -Method POST -Uri "$MembersLink" -F5Session $F5Session -Body $JSONBody -ContentType 'application/json' -ErrorMessage "Failed to add $Name to $($pool.name)." | Add-ObjectDetail -TypeName 'PoshLTM.PoolMember'
 
-                            #Retrieve the pool member so it can be enabled / disabled
-                            If ($Address){
-                                $poolMember = $pool | Get-PoolMember -F5Session $F5Session -Address $Address -Application $Application
-                            }
-                            If ($Name){
-                                $poolMember = $pool | Get-PoolMember -F5Session $F5Session -Name $Name -Application $Application
-                            }
-
                             #After adding to the pool, make sure the member status is set as specified
                             If ($Status -eq "Enabled"){
-                                $poolMember | Enable-PoolMember -F5session $F5Session | Out-Null
+
+                                $pool | Get-PoolMember -F5Session $F5Session -Address $AddressString -Name $Name -Application $Application | Enable-PoolMember -F5session $F5Session | Out-Null
                             }
                             ElseIf ($Status -eq "Disabled"){
-                                $poolMember | Disable-PoolMember -F5session $F5Session | Out-Null
+                                $pool | Get-PoolMember -F5Session $F5Session -Address $AddressString -Name $Name -Application $Application | Disable-PoolMember -F5session $F5Session | Out-Null
 
                             }
                         }
@@ -122,13 +109,8 @@
             'PoolName' {
                 foreach($pName in $PoolName) {
 
-                    $pool = Get-Pool -F5Session $F5Session -PoolName $pName -Partition $Partition -Application $Application 
-                    If ($Address){
-                        $pool | Add-PoolMember -F5session $F5Session -Address $Address -Name $Name -Description $Description -PortNumber $PortNumber -Status $Status -Application $Application
-                    }
-                    Else {
-                        $pool | Add-PoolMember -F5session $F5Session -Name $Name -Description $Description -PortNumber $PortNumber -Status $Status -Application $Application
-                    }
+                    Get-Pool -F5Session $F5Session -PoolName $pName -Partition $Partition -Application $Application | Add-PoolMember -F5session $F5Session -Address $Address -Name $Name -Description $Description -PortNumber $PortNumber -Status $Status -Application $Application
+
                 }
             }
         }
