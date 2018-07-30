@@ -1,4 +1,4 @@
-Function Test-Session {
+Function Test-F5Session {
 <#
 .SYNOPSIS
     Check that the F5Session object has a valid base URL and PSCredential object
