@@ -3,11 +3,7 @@
     A module for using the F5 LTM REST API to administer an LTM device
 .DESCRIPTION  
     This module uses the F5 LTM REST API to manipulate and query pools, pool members, virtual servers and iRules
-    It is built to work with the following versions
-    * 11.5.1 Build 8.0.175 Hotfix 8 and later
-    * 11.6.0 Build 5.0.429 Hotfix 4 and later
-    * All versions of 12.x
-    * All versions of 13.x
+    It is built to work with version 11.6 and later
 .NOTES  
     File Name    : F5-LTM.psm1
     Author       : Joel Newton - jnewton@springcm.com
@@ -23,31 +19,28 @@
 #Add-Type -Path "${PSScriptRoot}\TypeData\PoshLTM.Types.cs"
 #Update-FormatData "${PSScriptRoot}\TypeData\PoshLTM.Format.ps1xml"
 $ScriptPath = Split-Path $MyInvocation.MyCommand.Path
-
 #region Load Public Functions
 
-try {
     Get-ChildItem "$ScriptPath\Public" -Filter *.ps1 -Recurse| Select-Object -Expand FullName | ForEach-Object {
         $Function = Split-Path $_ -Leaf
-        . $_
-    }
-} catch {
-    Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
-    Continue
-}
+        try {
+            . $_
+        } catch {
+            Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
+        }
+   }
 
 #endregion
 
 #region Load Private Functions
 
-try {
-   Get-ChildItem "$ScriptPath\Private" -Filter *.ps1 -Recurse | Select-Object -Expand FullName | ForEach-Object {
-       $Function = Split-Path $_ -Leaf
-       . $_
-   }
-} catch {
-   Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
-   Continue
-}
+    Get-ChildItem "$ScriptPath\Private" -Filter *.ps1 -Recurse | Select-Object -Expand FullName | ForEach-Object {
+        $Function = Split-Path $_ -Leaf
+        try {
+            . $_
+        } catch {
+            Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
+        }
+    }
 
 #endregion
