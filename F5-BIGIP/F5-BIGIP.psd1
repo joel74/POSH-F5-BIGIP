@@ -114,7 +114,8 @@ PrivateData = @{
 # HelpInfoURI = ''
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-# DefaultCommandPrefix = ''
+# Not yet ready to use a prefix
+# DefaultCommandPrefix = 'F5'
 
 }
 
